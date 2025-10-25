@@ -1,4 +1,4 @@
-
+-- MODELADO Y BIGQUERY
 
 -- MODELO VERSION 1: Modelo de regresión logística para predecir si la propina es mayor a 5 dólares
 CREATE OR REPLACE MODEL `my_dataset.modelo_propinas_v1`
@@ -19,9 +19,12 @@ SELECT
   passenger_count,
   CAST(payment_type AS INT64) AS payment_type, 
 
-  SAFE_DIVIDE(tip_amount, fare_amount) AS tip_to_fare_ratio,
-
+  EXTRACT(HOUR FROM pickup_datetime) AS pickup_hour,
   EXTRACT(DAYOFWEEK FROM pickup_datetime) AS pickup_dayofweek,
+
+  SAFE_DIVIDE(tip_amount, fare_amount) AS tip_to_fare_ratio,   -- J: Patrón relativo de propina
+  SAFE_DIVIDE(fare_amount, trip_distance) AS fare_per_mile,     -- J: Tarifa por milla (valor)
+
 FROM `bigquery-public-data.new_york_taxi_trips.tlc_yellow_trips_2022`
 WHERE
     payment_type IN ('1', '2')
@@ -60,9 +63,12 @@ SELECT
   passenger_count,
   CAST(payment_type AS INT64) AS payment_type, 
 
-  SAFE_DIVIDE(tip_amount, fare_amount) AS tip_to_fare_ratio,
-
+  EXTRACT(HOUR FROM pickup_datetime) AS pickup_hour,
   EXTRACT(DAYOFWEEK FROM pickup_datetime) AS pickup_dayofweek,
+  
+  SAFE_DIVIDE(tip_amount, fare_amount) AS tip_to_fare_ratio,   -- J: Patrón relativo de propina
+  SAFE_DIVIDE(fare_amount, trip_distance) AS fare_per_mile,     -- J: Tarifa por milla (valor)
+
 FROM `bigquery-public-data.new_york_taxi_trips.tlc_yellow_trips_2022`
 WHERE
     payment_type IN ('1', '2')
@@ -82,3 +88,5 @@ WHERE
 
 SELECT * 
 FROM ML.EVALUATE(MODEL `my_dataset.modelo_propinas_v2`);
+
+
