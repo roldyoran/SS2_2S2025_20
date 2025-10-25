@@ -43,6 +43,8 @@ WHERE
 SELECT * 
 FROM ML.EVALUATE(MODEL `my_dataset.modelo_propinas_v1`);
 
+SELECT * FROM ML.TRAINING_INFO(MODEL `my_dataset.modelo_propinas_v1`);
+
 
 -- MODELO VERSION 2: Modelo de regresión logística para predecir si la propina es mayor a 5 dólares con ligeros cambios en los hiperparámetros
 CREATE OR REPLACE MODEL `my_dataset.modelo_propinas_v2`
@@ -90,3 +92,4 @@ SELECT *
 FROM ML.EVALUATE(MODEL `my_dataset.modelo_propinas_v2`);
 
 
+SELECT * FROM ML.TRAINING_INFO(MODEL `my_dataset.modelo_propinas_v2`);
