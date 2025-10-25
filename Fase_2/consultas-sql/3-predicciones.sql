@@ -41,7 +41,7 @@ FROM ML.PREDICT(
       AND trip_distance < 1000
       AND EXTRACT(MONTH FROM pickup_datetime) BETWEEN 7 AND 12
       AND EXTRACT(YEAR FROM pickup_datetime) = 2022
-      AND RAND() < 0.002  -- 0.2% de datos aleatorios
+      AND RAND() < 0.2  -- 0.2% de datos aleatorios
     LIMIT 1001
   )
 );

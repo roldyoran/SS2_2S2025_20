@@ -200,3 +200,6 @@ El **Modelo V1** fue seleccionado por presentar ligeras ventajas en la mayoría 
 ### 🔗 Enlaces a Tableros
 
 *Enlaces a los tableros de resultados y métricas...*
+
+Looker Studio: Modelo Propinas regresion logistica, predicciones julio a diciembre: 
+https://lookerstudio.google.com/reporting/d4593a13-81d2-461c-874a-0930f9b58074
