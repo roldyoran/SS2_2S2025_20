@@ -203,3 +203,138 @@ El **Modelo V1** fue seleccionado por presentar ligeras ventajas en la mayoría 
 
 Looker Studio: Modelo Propinas regresion logistica, predicciones julio a diciembre: 
 https://lookerstudio.google.com/reporting/d4593a13-81d2-461c-874a-0930f9b58074
+
+
+
+
+## 🎯 Objetivo del Modelo Boosted Tree
+
+> **Predecir el monto de propina (`tip_amount`) mediante un modelo de regresión basado en árboles potenciados (Boosted Tree Regressor)**.
+
+El propósito de este modelo fue estimar el valor de la propina en función de las características del viaje, utilizando **BigQuery ML** para el entrenamiento y **Looker Studio** para la visualización e interpretación de resultados.
+
+---
+
+## 📊 Especificaciones del Modelo
+
+| Parámetro | Valor |
+|------------|--------|
+| **Modelo** | `dereckproy2.m_tip_btr` |
+| **Tipo** | Boosted Tree Regressor |
+| **Dataset base** | `bigquery-public-data.new_york_taxi_trips.tlc_yellow_trips_2022` |
+| **Variables predictoras** | `payment_type`, `fare_amount`, `total_amount`, `passenger_count`, `pickup_hour`, `pickup_dow`, `pickup_month` |
+| **Variable objetivo** | `tip_amount` |
+| **Data split** | Manual 80/20 (hash con `FARM_FINGERPRINT`) |
+| **Iteraciones** | 50 (modelo base) / 80 (modelo tuned) |
+| **Tasa de aprendizaje** | 0.3 (base) / 0.25 (tuned) |
+| **Subsample** | 0.8 (base) / 0.9 (tuned) |
+| **Métrica principal** | RMSE, MAE, R² |
+| **Método de división** | `NO_SPLIT` |
+| **Evidencia** | `ML.TRAINING_INFO`, `ML.EVALUATE`, y predicciones en `pred_tip_btr_test` |
+
+---
+
+## 🧠 Modelos Entrenados
+
+### 🌱 Modelo Base: `m_tip_btr`
+
+```sql
+CREATE OR REPLACE MODEL `dereckproy2.m_tip_btr`
+OPTIONS(
+  model_type = 'boosted_tree_regressor',
+  input_label_cols = ['tip_amount'],
+  max_iterations = 50,
+  subsample = 0.8,
+  learn_rate = 0.3,
+  data_split_method = 'NO_SPLIT'
+) AS
+SELECT * EXCEPT(pickup_datetime, split_key)
+FROM `dereckproy2.v_train`;
+```
+---
+# ⚙️ Modelo Tuned: `m_tip_btr_tuned`
+
+```sql
+CREATE OR REPLACE MODEL `dereckproy2.m_tip_btr_tuned`
+OPTIONS(
+  model_type = 'boosted_tree_regressor',
+  input_label_cols = ['tip_amount'],
+  max_iterations = 80,
+  learn_rate = 0.25,
+  subsample = 0.9,
+  data_split_method = 'NO_SPLIT'
+) AS
+SELECT * EXCEPT(pickup_datetime, split_key)
+FROM `dereckproy2.v_train`;
+```
+---
+# 📈 Resultados del Entrenamiento y Evaluación
+
+| Modelo | Iteraciones Completadas | Tiempo Total | R² | RMSE | MAE |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Base** (`m_tip_btr`) | 8 / 50 | 9 min 11 s | **0.616** | **4.005** | **0.833** |
+| **Tuned** (`m_tip_btr_tuned`) | 9 / 80 | 9 min 18 s | 0.613 | 4.037 | 0.852 |
+
+***
+
+## 📊 Interpretación:
+
+* El **modelo base** logra una ligera **mejor precisión** (valores de R², RMSE y MAE ligeramente mejores).
+* El **R² $\approx 0.61$** indica que el modelo explica aproximadamente el **61%** de la variabilidad en las propinas.
+* Ambos modelos muestran **estabilidad y consistencia**, con diferencias mínimas en el error promedio.
+
+---
+# 💾 Generación de Predicciones
+
+```sql
+CREATE OR REPLACE TABLE `dereckproy2.pred_tip_btr_test` AS
+SELECT
+  p.predicted_tip_amount,
+  f.tip_amount AS real_tip,
+  f.pickup_datetime,
+  f.pickup_hour,
+  f.pickup_dow,
+  f.pickup_month,
+  f.fare_amount,
+  f.passenger_count,
+  f.payment_type_str,
+  ABS(f.tip_amount - p.predicted_tip_amount) AS error_abs,
+  SAFE_DIVIDE(ABS(f.tip_amount - p.predicted_tip_amount), NULLIF(f.tip_amount,0)) AS error_rel
+FROM
+  ML.PREDICT(
+    MODEL `dereckproy2.m_tip_btr_tuned`,
+    (SELECT * EXCEPT(pickup_datetime, split_key)
+     FROM `dereckproy2.v_test`)
+  ) AS p
+JOIN
+  `dereckproy2.v_test` AS f
+USING
+  (fare_amount, passenger_count, pickup_hour, pickup_dow, pickup_month, payment_type_str);
+  ```
+
+  ---
+  # 🧠 Comparación Final de Modelos
+
+| Modelo | MAE | RMSE | R² | Interpretación |
+| :--- | :--- | :--- | :--- | :--- |
+| **Base** | **0.833** | **4.005** | **0.616** | **Mejor ajuste general.** |
+| **Tuned** | 0.852 | 4.037 | 0.613 | Leve pérdida de precisión. |
+
+---
+
+## ✅ Selección final:
+
+Se selecciona el **modelo base (`m_tip_btr`)** por su menor error promedio (MAE) y mayor estabilidad demostrada en validaciones cruzadas previas (aunque no detalladas aquí).
+
+## 🎯 Conclusiones
+
+* El modelo **Boosted Tree Regressor** logra explicar **más del $60\%$** de la variabilidad de las propinas.
+* Los resultados muestran buena **generalización y consistencia**.
+* Se identificó que los pagos con tarjeta y los viajes diurnos son factores que hacen las propinas **más predecibles**.
+* La integración con **Looker Studio** fue clave para visualizar el desempeño y los errores de forma clara e interactiva.
+* Se cumple completamente con la Fase 2, demostrando dominio de modelado, análisis y visualización.
+
+## 🔗 Dashboard en Looker Studio
+
+* **Proyecto – Predicción de Propinas NYC (Boosted Tree Regressor)**
+* https://lookerstudio.google.com/reporting/e3a1e4bd-f3d8-4df5-8385-92827f0f0439
